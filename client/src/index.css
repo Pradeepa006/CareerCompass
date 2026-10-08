@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: "DM Sans", Arial, sans-serif;
+  --font-display: "Manrope", Arial, sans-serif;
+  --font-mono: "DM Mono", monospace;
+}
+
+@layer base {
+  :root { --background: 210 16% 95%; --foreground: 218 23% 10%; --card: 0 0% 100%; --card-foreground: 218 23% 10%; --primary: 216 55% 45%; --primary-foreground: 0 0% 100%; --muted: 210 18% 92%; --muted-foreground: 215 12% 42%; --border: 216 16% 86%; --ring: 216 55% 45%; }
+  * { border-color: hsl(var(--border)); }
+  body { margin: 0; min-width: 320px; background: #eef1f4; color: #121722; font-family: var(--font-sans); }
+  button, input, select, textarea { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid rgba(78, 133, 206, .5); outline-offset: 3px; }
+  input, select, textarea { border: 1px solid #d7dee7; border-radius: .75rem; background: #fff; padding: .68rem .78rem; color: #1b2635; transition: border-color 160ms var(--ease-out), box-shadow 160ms var(--ease-out); }
+  input:focus, select:focus, textarea:focus { border-color: #4e85ce; box-shadow: 0 0 0 3px rgba(78,133,206,.13); outline: none; }
+}
+
+.page-grid { background-image: linear-gradient(rgba(18,23,34,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(18,23,34,.035) 1px, transparent 1px); background-size: 36px 36px; }
+.display { font-family: var(--font-display); letter-spacing: -0.055em; }
+.eyebrow { font-family: var(--font-mono); font-size: .68rem; letter-spacing: .11em; text-transform: uppercase; color: #5c6b7d; }
+.thin-copy { color: #637083; font-weight: 400; }
+.soft-card { background: rgba(255,255,255,.84); border: 1px solid rgba(187,197,208,.7); box-shadow: 0 12px 30px rgba(31,42,55,.045); backdrop-filter: blur(10px); }
+.nav-link { color: #647184; transition: color 160ms ease, background 160ms ease; }
+.nav-link:hover, .nav-link[data-active="true"] { background: #dde8fa; color: #1c4c94; }
+.shape { position: absolute; border-radius: 999px; pointer-events: none; filter: blur(.2px); }
+.button-press { transition: transform 160ms cubic-bezier(.23,1,.32,1), box-shadow 160ms cubic-bezier(.23,1,.32,1), background 160ms cubic-bezier(.23,1,.32,1); }
+.button-press:active { transform: scale(.97); }
+.state-panel { border: 1px dashed #cbd5e1; background: rgba(255,255,255,.68); }
+@media (prefers-reduced-motion: no-preference) { .float-in { animation: float-in 430ms cubic-bezier(.23,1,.32,1) both; } @keyframes float-in { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 1ms !important; } }

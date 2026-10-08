@@ -1,0 +1,50 @@
+# Project TODO
+
+- [x] Define the CareerCompass domain model, persistence strategy, and LLM output contract.
+- [x] Add normalized database tables for student profiles, skills, careers, mappings, predictions, roadmaps, and progress.
+- [x] Seed 50+ categorized skill records and 13+ career roles with curated requirement mappings and industry indicators.
+- [x] Create protected profile procedures with skill proficiency, education, interests, projects, certifications, and experience fields.
+- [x] Implement server-side LLM career prediction with validated ranked suitability scores and human-readable explanations.
+- [x] Implement deterministic, explainable skill-gap prioritization using career importance and demand weights.
+- [x] Generate and persist target-career roadmaps ordered by skill prerequisites.
+- [x] Persist individual roadmap-item progress and recalculate career readiness from stored progress.
+- [x] Create a Scandinavian-inspired landing page, student dashboard, profile flow, prediction view, skill-gap view, roadmap view, and trends view.
+- [x] Implement role-gated administration for skills, careers, mappings, trends, and registered-user visibility.
+- [x] Add loading, empty, validation, error, and unavailable-service states for all principal workflows.
+- [x] Write and run Vitest coverage for deterministic readiness, skill-gap, and authorization logic.
+- [x] Verify responsive rendering and principal user flows, then save a release checkpoint.
+- [x] Model skill prerequisites and generate roadmap sequences from dependency relationships rather than priority alone.
+- [x] Extend the admin interface with career and industry-trend editing workflows.
+- [x] Add visible client-side validation guidance to the principal profile and administration forms.
+- [x] Add an administrator workflow for editing existing career records.
+- [x] Render inline validation guidance and invalid-state feedback in principal forms.
+- [x] Verify authenticated profile, analysis, target, progress, and admin-access flows, then save the release checkpoint.
+- [x] Diagnose and resolve the invalid authentication-state failure on protected routes.
+- [x] Produce a short architecture report for the existing CareerCompass implementation before modifying it.
+- [x] Establish a reusable premium design system with accessible motion, skeleton, stat, chart, and state components.
+- [x] Create and apply reusable premium chart, skeleton, and state-system components across authenticated pages.
+- [x] Integrate the motion and design tokens across key authenticated pages to complete the design-system foundation.
+- [x] Redesign the authenticated dashboard around top career match, grounded strengths, gaps, next action, roadmap, trends, and readiness.
+- [x] Add transparent career comparison with model-derived versus rule-based explanation labels.
+- [x] Upgrade deterministic skill-gap presentation and the interactive career-journey roadmap.
+- [x] Expand industry intelligence with curated trends, demand, and skill indicators.
+- [x] Add a scoped AI Career Assistant that reuses the existing profile and career intelligence safely.
+- [x] Add meaningful gamification and student analytics without inventing user activity data.
+- [x] Create a dedicated deterministic skill-gap experience with matched and missing skills, priority groups, proficiency, demand, gap severity, and learning status.
+- [x] Scope this release's gamification to real-action milestone signals; persistent achievements, XP, levels, and streaks remain intentionally deferred rather than simulated.
+- [x] Add per-skill matched-requirement detail alongside the missing-skill analysis.
+- [x] Document the released action-derived milestone scope and deferred persistent gamification mechanics in the release notes.
+- [x] Verify all enhanced authenticated workflows, responsive layouts, accessibility preferences, tests, and release readiness.
+- [x] Add explicit inline field-level validation feedback to the principal profile and admin forms.
+- [x] Run and document end-to-end authenticated checks for profile saving, analysis, target selection, progress updates, and administrator access.
+- [x] Perform final desktop/mobile and reduced-motion release verification across enhanced authenticated pages.
+- [x] Add inline error feedback to career-edit and trend-edit administration forms.
+- [x] Exercise and record live authenticated profile-save, analysis, target-selection, and roadmap-progress mutations after the final UI updates.
+- [x] Complete final desktop/mobile and reduced-motion verification with direct evidence across enhanced pages.
+- [x] Record direct authenticated profile-save, analysis, target-selection, and roadmap-progress mutation evidence after final UI updates.
+- [x] Record a reduced-motion and full enhanced-page desktop/mobile verification pass in the final notes.
+- [x] Resolve the career-explorer hook-order runtime error and re-run the authenticated analysis workflow.
+- [x] Verify the live application with reduced motion explicitly enabled on an animated authenticated page.
+- [x] Capture and document mobile evidence for dashboard, careers, roadmap, analytics, and industry intelligence routes.
+- [x] Record observable suppression of a live animated component while reduced-motion preference is enabled.
+- [x] Verify and document a named animated CareerCompass component's suppressed motion under Chrome-level reduced-motion emulation.
