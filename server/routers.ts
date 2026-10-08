@@ -8,6 +8,7 @@ import { adminRouter } from "./routers/admin";
 import { assistantRouter } from "./routers/assistant";
 import { careerRouter } from "./routers/career";
 import { profileRouter } from "./routers/profile";
+import { resumeRouter } from "./routers/resume";
 
 export const appRouter = router({
   system: systemRouter,
@@ -32,6 +33,7 @@ export const appRouter = router({
   career: careerRouter,
   assistant: assistantRouter,
   admin: adminRouter,
+  resume: resumeRouter,
 });
 
 export type AppRouter = typeof appRouter;
