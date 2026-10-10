@@ -42,25 +42,36 @@ export default function Profile() {
 
   useEffect(() => {
     const p = profile.data?.profile;
-    if (p)
+    if (p) {
       setDraft({
         educationLevel: p.educationLevel ?? "",
         degree: p.degree ?? "",
         institution: p.institution ?? "",
-        graduationYear: p.graduationYear?.toString() ?? "",
+        graduationYear: p.graduationYear != null ? String(p.graduationYear) : "",
         bio: p.bio ?? "",
-        interests: p.interests.join(", "),
-        preferredDomains: p.preferredDomains.join(", "),
+        interests: Array.isArray(p.interests) ? p.interests.join(", ") : (typeof p.interests === "string" ? p.interests : ""),
+        preferredDomains: Array.isArray(p.preferredDomains) ? p.preferredDomains.join(", ") : (typeof p.preferredDomains === "string" ? p.preferredDomains : ""),
         workPreference: p.workPreference ?? "",
         careerGoal: p.careerGoal ?? "",
       });
-  }, [profile.data]);
+    }
+  }, [profile.data?.profile?.id, profile.data?.profile?.updatedAt, profile.data?.profile?.userId]);
 
   const refresh = () => utils.profile.get.invalidate();
 
   const save = trpc.profile.save.useMutation({
-    onSuccess: () => { refresh(); toast.success("Profile saved"); },
-    onError: e => toast.error(e.message),
+    onSuccess: () => { refresh(); toast.success("Profile saved successfully"); },
+    onError: e => {
+      try {
+        const parsed = JSON.parse(e.message);
+        if (Array.isArray(parsed) && parsed[0]?.message) {
+          const field = parsed[0].path?.[0] ? `${parsed[0].path[0]}: ` : "";
+          toast.error(`${field}${parsed[0].message}`);
+          return;
+        }
+      } catch {}
+      toast.error(e.message);
+    },
   });
   const replaceSkills = trpc.profile.replaceSkills.useMutation({
     onSuccess: () => { refresh(); toast.success("Skills updated"); },

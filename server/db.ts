@@ -37,7 +37,9 @@ export async function getDb() {
   return database;
 }
 
-// ─── In-memory fallback store ────────────────────────────────────────────────
+import { careerSeeds, prerequisiteSeeds, skillSeeds } from "./catalog";
+
+// ─── In-memory fallback store with local JSON file persistence ───────────────
 
 let _catalog: { skills: any[]; careers: any[]; trends: any[] } | null = null;
 
@@ -75,15 +77,75 @@ let _projectIdSeq = 1;
 let _certIdSeq = 1;
 let _expIdSeq = 1;
 
+const LOCAL_STORE_FILE = path.resolve(process.cwd(), "local_store.json");
+
+function loadLocalStore() {
+  try {
+    if (fs.existsSync(LOCAL_STORE_FILE)) {
+      const raw = fs.readFileSync(LOCAL_STORE_FILE, "utf8");
+      const data = JSON.parse(raw);
+      if (data.profiles) Object.entries(data.profiles).forEach(([k, v]) => memProfiles.set(Number(k), v));
+      if (data.skills) Object.entries(data.skills).forEach(([k, v]) => memSkills.set(Number(k), v as any[]));
+      if (data.projects) Object.entries(data.projects).forEach(([k, v]) => memProjects.set(Number(k), v as any[]));
+      if (data.certs) Object.entries(data.certs).forEach(([k, v]) => memCerts.set(Number(k), v as any[]));
+      if (data.exps) Object.entries(data.exps).forEach(([k, v]) => memExps.set(Number(k), v as any[]));
+      if (data.targets) Object.entries(data.targets).forEach(([k, v]) => memTargets.set(Number(k), Number(v)));
+      if (data.roadmaps) Object.entries(data.roadmaps).forEach(([k, v]) => memRoadmaps.set(Number(k), v));
+      if (data.roadmapItems) Object.entries(data.roadmapItems).forEach(([k, v]) => memRoadmapItems.set(Number(k), v as any[]));
+      if (data.predictions) Object.entries(data.predictions).forEach(([k, v]) => memPredictions.set(Number(k), v as any[]));
+      if (data._seqs) {
+        _roadmapIdSeq = data._seqs.roadmap || 1;
+        _itemIdSeq = data._seqs.item || 1;
+        _projectIdSeq = data._seqs.project || 1;
+        _certIdSeq = data._seqs.cert || 1;
+        _expIdSeq = data._seqs.exp || 1;
+      }
+    }
+  } catch (err) {
+    console.error("[Storage] Failed to load local_store.json", err);
+  }
+}
+
+function persistLocalStore() {
+  try {
+    const data = {
+      profiles: Object.fromEntries(memProfiles),
+      skills: Object.fromEntries(memSkills),
+      projects: Object.fromEntries(memProjects),
+      certs: Object.fromEntries(memCerts),
+      exps: Object.fromEntries(memExps),
+      targets: Object.fromEntries(memTargets),
+      roadmaps: Object.fromEntries(memRoadmaps),
+      roadmapItems: Object.fromEntries(memRoadmapItems),
+      predictions: Object.fromEntries(memPredictions),
+      _seqs: {
+        roadmap: _roadmapIdSeq,
+        item: _itemIdSeq,
+        project: _projectIdSeq,
+        cert: _certIdSeq,
+        exp: _expIdSeq,
+      }
+    };
+    fs.writeFileSync(LOCAL_STORE_FILE, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    console.error("[Storage] Failed to save local_store.json", err);
+  }
+}
+
+loadLocalStore();
+
 function getMemProfileBundle(userId: number) {
   const catalog = loadCatalog();
   const skillsById = new Map(catalog.skills.map((s: any) => [s.id, s]));
   const careersById = new Map(catalog.careers.map((c: any) => [c.id, c]));
 
-  const userSkills = (memSkills.get(userId) ?? []).map((entry: any) => {
+  const userSkills: Array<{ skillId: number; slug: string; name: string; domain: string; demand: number; trending: boolean; proficiency: number }> = [];
+  for (const entry of memSkills.get(userId) ?? []) {
     const s = skillsById.get(entry.skillId);
-    return s ? { skillId: s.id, slug: s.slug, name: s.name, domain: s.domain, demand: s.demand, trending: s.trending, proficiency: entry.proficiency } : null;
-  }).filter(Boolean);
+    if (s) {
+      userSkills.push({ skillId: s.id, slug: s.slug, name: s.name, domain: s.domain, demand: s.demand, trending: s.trending, proficiency: entry.proficiency });
+    }
+  }
 
   const targetCareerId = memTargets.get(userId);
   let target = null;
@@ -164,7 +226,22 @@ export async function saveProfile(userId: number, input: {
 }) {
   const db = await getDb();
   if (!db) {
-    memProfiles.set(userId, { userId, ...input, id: userId, createdAt: new Date(), updatedAt: new Date() });
+    memProfiles.set(userId, {
+      userId,
+      educationLevel: input.educationLevel || null,
+      degree: input.degree || null,
+      institution: input.institution || null,
+      graduationYear: input.graduationYear || null,
+      bio: input.bio || null,
+      interests: input.interests || [],
+      preferredDomains: input.preferredDomains || [],
+      workPreference: input.workPreference || null,
+      careerGoal: input.careerGoal || null,
+      id: userId,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    persistLocalStore();
     return getMemProfileBundle(userId);
   }
   const values = { userId, educationLevel: input.educationLevel || null, degree: input.degree || null, institution: input.institution || null, graduationYear: input.graduationYear || null, bio: input.bio || null, interests: input.interests, preferredDomains: input.preferredDomains, workPreference: input.workPreference || null, careerGoal: input.careerGoal || null };
@@ -179,6 +256,7 @@ export async function replaceStudentSkills(userId: number, values: Array<{ skill
     const validIds = new Set(catalog.skills.map((s: any) => s.id));
     if (values.some(v => !validIds.has(v.skillId))) throw new Error("One or more selected skills are no longer available.");
     memSkills.set(userId, values);
+    persistLocalStore();
     return getMemProfileBundle(userId);
   }
   if (values.length) {
@@ -196,6 +274,7 @@ export async function addProfileProject(userId: number, value: { title: string; 
     const existing = memProjects.get(userId) ?? [];
     existing.unshift({ id: _projectIdSeq++, userId, title: value.title, description: value.description || null, url: value.url || null, createdAt: new Date() });
     memProjects.set(userId, existing);
+    persistLocalStore();
     return getMemProfileBundle(userId);
   }
   await db.insert(studentProjects).values({ userId, title: value.title, description: value.description || null, url: value.url || null });
@@ -208,6 +287,7 @@ export async function addCertification(userId: number, value: { name: string; is
     const existing = memCerts.get(userId) ?? [];
     existing.unshift({ id: _certIdSeq++, userId, name: value.name, issuer: value.issuer || null, year: value.year || null, createdAt: new Date() });
     memCerts.set(userId, existing);
+    persistLocalStore();
     return getMemProfileBundle(userId);
   }
   await db.insert(studentCertifications).values({ userId, name: value.name, issuer: value.issuer || null, year: value.year || null });
@@ -220,6 +300,7 @@ export async function addExperience(userId: number, value: { title: string; orga
     const existing = memExps.get(userId) ?? [];
     existing.unshift({ id: _expIdSeq++, userId, title: value.title, organization: value.organization || null, description: value.description || null, durationMonths: value.durationMonths, createdAt: new Date() });
     memExps.set(userId, existing);
+    persistLocalStore();
     return getMemProfileBundle(userId);
   }
   await db.insert(studentExperiences).values({ userId, title: value.title, organization: value.organization || null, description: value.description || null, durationMonths: value.durationMonths });
@@ -228,7 +309,29 @@ export async function addExperience(userId: number, value: { title: string; orga
 
 export async function getCareerRequirements(careerId: number) {
   const db = await getDb();
-  if (!db) return [];
+  if (!db) {
+    const catalog = loadCatalog();
+    const career = catalog.careers.find((c: any) => c.id === careerId);
+    if (!career) return [];
+    const seed = careerSeeds.find(s => s.slug === career.slug);
+    if (!seed) return [];
+    const skillsBySlug = new Map(catalog.skills.map((s: any) => [s.slug, s]));
+    return seed.requirements.flatMap(r => {
+      const s = skillsBySlug.get(r.skill);
+      return s ? [{
+        skillId: s.id,
+        slug: s.slug,
+        name: s.name,
+        demand: s.demand,
+        trending: s.trending,
+        description: s.description,
+        importance: r.importance,
+        minimumProficiency: r.minimum,
+        requirementType: r.type,
+        learningOrder: r.order
+      }] : [];
+    }).sort((a, b) => a.learningOrder - b.learningOrder);
+  }
   return db.select({ skillId: skills.id, slug: skills.slug, name: skills.name, demand: skills.demand, trending: skills.trending, description: skills.description, importance: careerSkills.importance, minimumProficiency: careerSkills.minimumProficiency, requirementType: careerSkills.requirementType, learningOrder: careerSkills.learningOrder })
     .from(careerSkills).innerJoin(skills, eq(careerSkills.skillId, skills.id)).where(eq(careerSkills.careerId, careerId)).orderBy(careerSkills.learningOrder);
 }
@@ -249,6 +352,7 @@ export async function saveCareerPrediction(userId: number, results: unknown, mod
     const existing = memPredictions.get(userId) ?? [];
     existing.unshift({ results, model, createdAt: new Date() });
     memPredictions.set(userId, existing);
+    persistLocalStore();
     return;
   }
   await db.insert(careerPredictions).values({ userId, results, model });
@@ -275,7 +379,37 @@ export async function setTargetCareer(userId: number, careerId: number) {
     const roadmapId = _roadmapIdSeq++;
     const roadmap = { id: roadmapId, userId, careerId, careerName: career.name, careerSlug: career.slug, careerDomain: career.domain, active: true, createdAt: new Date() };
     memRoadmaps.set(userId, roadmap);
-    memRoadmapItems.set(roadmapId, []);
+
+    const requirements = await getCareerRequirements(careerId);
+    const learner = await getProfileBundle(userId);
+    const gaps = analyzeSkillGaps(learner.skills, requirements);
+    const skillsBySlug = new Map(catalog.skills.map((s: any) => [s.slug, s]));
+    const skillsById = new Map(catalog.skills.map((s: any) => [s.id, s]));
+    const dependencies = prerequisiteSeeds.flatMap(([skillSlug, prereqSlug]) => {
+      const s1 = skillsBySlug.get(skillSlug);
+      const s2 = skillsBySlug.get(prereqSlug);
+      return s1 && s2 ? [{ skillId: s1.id, prerequisiteSkillId: s2.id }] : [];
+    });
+    const startedSkills = new Set(learner.skills.filter(skill => skill.proficiency >= 1).map(skill => skill.skillId));
+    const sequenceIds = buildPrerequisiteSequence(gaps.map(gap => gap.skillId), dependencies, startedSkills);
+    const priorityById = new Map(gaps.map(gap => [gap.skillId, gap]));
+    const items = sequenceIds.flatMap((skillId, index) => {
+      const skill = skillsById.get(skillId);
+      const gap = priorityById.get(skillId);
+      return skill ? [{
+        id: _itemIdSeq++,
+        roadmapId,
+        skillId,
+        skillName: skill.name,
+        skillSlug: skill.slug,
+        title: `Learn ${skill.name}`,
+        description: gap ? `${skill.description ?? "Build this skill."} ${gap.explanation}` : `${skill.description ?? "Build this prerequisite."} This is a prerequisite for a target-career skill in your roadmap.`,
+        position: index + 1,
+        status: "not_started" as const
+      }] : [];
+    });
+    memRoadmapItems.set(roadmapId, items);
+    persistLocalStore();
     return getActiveRoadmap(userId);
   }
   await db.insert(studentTargets).values({ userId, careerId }).onDuplicateKeyUpdate({ set: { careerId } });
@@ -320,7 +454,30 @@ export async function getActiveRoadmap(userId: number) {
 
 export async function getRoadmapSkillGraph(roadmapId: number) {
   const db = await getDb();
-  if (!db) return { items: [], edges: [], skills: [] };
+  if (!db) {
+    const catalog = loadCatalog();
+    const skillsById = new Map(catalog.skills.map((s: any) => [s.id, s]));
+    const skillsBySlug = new Map(catalog.skills.map((s: any) => [s.slug, s]));
+    const items = (memRoadmapItems.get(roadmapId) ?? []).map((item: any) => ({
+      skillId: item.skillId,
+      position: item.position,
+      status: item.status ?? "not_started"
+    }));
+    if (!items.length) return { items, edges: [], skills: [] };
+    const itemIds = new Set(items.map((item: any) => item.skillId));
+    const edges = prerequisiteSeeds.flatMap(([skillSlug, prereqSlug]) => {
+      const s1 = skillsBySlug.get(skillSlug);
+      const s2 = skillsBySlug.get(prereqSlug);
+      return (s1 && s2 && itemIds.has(s1.id)) ? [{ skillId: s1.id, prerequisiteSkillId: s2.id }] : [];
+    });
+    const relatedIds = Array.from(new Set(items.map((item: any) => item.skillId).concat(edges.map(edge => edge.prerequisiteSkillId))));
+    const skillRows: any[] = [];
+    for (const id of relatedIds) {
+      const s = skillsById.get(id);
+      if (s) skillRows.push(s);
+    }
+    return { items, edges, skills: skillRows };
+  }
   const items = await db.select({ skillId: roadmapItems.skillId, position: roadmapItems.position, status: roadmapItems.status })
     .from(roadmapItems).where(eq(roadmapItems.roadmapId, roadmapId)).orderBy(roadmapItems.position);
   if (!items.length) return { items, edges: [], skills: [] };
@@ -342,6 +499,7 @@ export async function updateRoadmapItem(userId: number, roadmapItemId: number, s
     if (idx === -1) throw new Error("That roadmap item is not available in your account.");
     items[idx] = { ...items[idx], status };
     memRoadmapItems.set(roadmap.id, items);
+    persistLocalStore();
     return getActiveRoadmap(userId);
   }
   const allowed = await db.select({ id: roadmapItems.id }).from(roadmapItems).innerJoin(roadmaps, eq(roadmapItems.roadmapId, roadmaps.id))

@@ -83,7 +83,7 @@ export const careerSeeds: CareerSeed[] = [
   { slug:"product-manager", name:"Product Manager", domain:"Product", description:"Aligns user needs, delivery teams and measurable product outcomes.", growth:"Strong", demand:4, requirements:[r("communication",5,3,1),r("agile",5,2,1),r("product-analytics",4,2,2),r("ux-research",4,2,2),r("data-visualization",2,1,3,"preferred"),r("problem-solving",5,3,1)] },
 ];
 
-const prerequisiteSeeds = [
+export const prerequisiteSeeds = [
   ["typescript", "javascript"], ["react", "html-css"], ["react", "javascript"], ["nextjs", "react"], ["nodejs", "javascript"],
   ["spring-boot", "java"], ["rest-api", "java"], ["authentication", "rest-api"], ["postgresql", "sql"], ["data-modeling", "sql"],
   ["pandas", "python"], ["numpy", "python"], ["scikit-learn", "python"], ["scikit-learn", "statistics"], ["scikit-learn", "pandas"],

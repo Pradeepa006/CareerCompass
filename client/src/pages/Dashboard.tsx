@@ -33,7 +33,7 @@ export default function Dashboard() {
   const topMatch = analysis?.predictions[0];
   const gaps = current?.gaps ?? [];
   const highPriority = gaps.filter(gap => gap.priority === "High");
-  const nextItem = current?.roadmap?.items.find(item => item.status !== "completed");
+  const nextItem = (current?.roadmap?.items || []).find((item: any) => item.status !== "completed");
   const chartData = analysis?.predictions.slice(0, 5).map(item => ({ name: item.careerName, score: item.score })) ?? [];
   const hasCareerContext = Boolean(data.profile && data.skills.length);
 

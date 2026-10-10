@@ -12,15 +12,16 @@ const predictionSchema = z.object({
 });
 
 function profileForAnalysis(bundle: Awaited<ReturnType<typeof getProfileBundle>>) {
+  const safeSkills = (bundle.skills || []).filter((s): s is NonNullable<typeof s> => Boolean(s));
   return {
     education: [bundle.profile?.educationLevel, bundle.profile?.degree, bundle.profile?.institution].filter(Boolean).join(" · ") || "Not provided",
     interests: bundle.profile?.interests ?? [],
     preferredDomains: bundle.profile?.preferredDomains ?? [],
     careerGoal: bundle.profile?.careerGoal ?? "Not provided",
-    skills: bundle.skills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain })),
-    projects: bundle.projects.map(project => project.title),
-    certifications: bundle.certifications.map(item => item.name),
-    experience: bundle.experiences.map(item => ({ title: item.title, months: item.durationMonths })),
+    skills: safeSkills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain })),
+    projects: (bundle.projects || []).map(project => project.title),
+    certifications: (bundle.certifications || []).map(item => item.name),
+    experience: (bundle.experiences || []).map(item => ({ title: item.title, months: item.durationMonths })),
   };
 }
 
@@ -92,9 +93,10 @@ export const careerRouter = router({
   }),
   analytics: protectedProcedure.query(async ({ ctx }) => {
     const [profile, roadmap] = await Promise.all([getProfileBundle(ctx.user.id), getActiveRoadmap(ctx.user.id)]);
-    if (!roadmap) return { profile, roadmap: null, readiness: null, gaps: [], skillDistribution: profile.skills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain, demand: skill.demand })), progress: [] };
+    const safeSkills = (profile.skills || []).filter((s): s is NonNullable<typeof s> => Boolean(s));
+    if (!roadmap) return { profile, roadmap: null, readiness: null, gaps: [], skillDistribution: safeSkills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain, demand: skill.demand })), progress: [] };
     const snapshot = await buildCareerSnapshot(ctx.user.id, roadmap.careerId);
-    return { profile, roadmap, readiness: snapshot.readiness, gaps: snapshot.gaps, skillDistribution: profile.skills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain, demand: skill.demand })), progress: roadmap.items.map(item => ({ name: item.skillName, status: item.status, position: item.position })) };
+    return { profile, roadmap, readiness: snapshot.readiness, gaps: snapshot.gaps, skillDistribution: safeSkills.map(skill => ({ name: skill.name, level: skill.proficiency, domain: skill.domain, demand: skill.demand })), progress: (roadmap.items || []).map((item: any) => ({ name: item.skillName, status: item.status, position: item.position })) };
   }),
   updateProgress: protectedProcedure.input(z.object({ roadmapItemId: z.number().int().positive(), status: z.enum(["not_started", "in_progress", "completed"]) })).mutation(async ({ ctx, input }) => {
     const roadmap = await updateRoadmapItem(ctx.user.id, input.roadmapItemId, input.status);

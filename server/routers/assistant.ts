@@ -18,7 +18,8 @@ export const assistantRouter = router({
     await ensureCatalogSeeded();
     const [profile, roadmap, catalog] = await Promise.all([getProfileBundle(ctx.user.id), getActiveRoadmap(ctx.user.id), getCatalog()]);
     const requirements = profile.target ? await getCareerRequirements(profile.target.careerId) : [];
-    const gaps = requirements.length ? analyzeSkillGaps(profile.skills, requirements).slice(0, 6) : [];
+    const safeSkills = (profile.skills || []).filter((s): s is NonNullable<typeof s> => Boolean(s));
+    const gaps = requirements.length ? analyzeSkillGaps(safeSkills, requirements).slice(0, 6) : [];
     const model = await chooseAssistantModel();
     if (!model) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "CareerCompass AI is temporarily unavailable because no assistant model is configured." });
     const context = {
@@ -26,14 +27,14 @@ export const assistantRouter = router({
         education: [profile.profile?.educationLevel, profile.profile?.degree].filter(Boolean).join(" · ") || "Not supplied",
         interests: profile.profile?.interests ?? [],
         careerGoal: profile.profile?.careerGoal ?? "Not supplied",
-        skills: profile.skills.map(skill => ({ name: skill.name, level: skill.proficiency })),
+        skills: safeSkills.map(skill => ({ name: skill.name, level: skill.proficiency })),
         projectCount: profile.projects.length,
         certificationCount: profile.certifications.length,
         experienceMonths: profile.experiences.reduce((total, item) => total + item.durationMonths, 0),
       },
       targetCareer: profile.target ? { name: profile.target.name, domain: profile.target.domain, demand: profile.target.demand, growth: profile.target.growthIndicator } : null,
       gaps: gaps.map(gap => ({ name: gap.name, currentLevel: gap.currentLevel, requiredLevel: gap.requiredLevel, priority: gap.priority, demand: gap.demand, reason: gap.explanation })),
-      roadmap: roadmap ? { itemCount: roadmap.items.length, completed: roadmap.items.filter(item => item.status === "completed").length, next: roadmap.items.find(item => item.status !== "completed")?.skillName ?? null } : null,
+      roadmap: roadmap ? { itemCount: roadmap.items.length, completed: (roadmap.items || []).filter((item: any) => item.status === "completed").length, next: (roadmap.items || []).find((item: any) => item.status !== "completed")?.skillName ?? null } : null,
       curatedTrends: catalog.trends.slice(0, 4).map(trend => ({ title: trend.title, domain: trend.relatedDomain, impact: trend.impact })),
     };
     try {

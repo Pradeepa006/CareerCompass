@@ -3,15 +3,15 @@ import { addCertification, addExperience, addProfileProject, getProfileBundle, r
 import { protectedProcedure, router } from "../_core/trpc";
 
 const profileInput = z.object({
-  educationLevel: z.string().max(80).optional(),
-  degree: z.string().max(160).optional(),
-  institution: z.string().max(200).optional(),
+  educationLevel: z.string().max(200).optional(),
+  degree: z.string().max(300).optional(),
+  institution: z.string().max(300).optional(),
   graduationYear: z.number().int().min(1950).max(2100).nullable().optional(),
-  bio: z.string().max(1200).optional(),
-  interests: z.array(z.string().trim().min(1).max(80)).max(12),
-  preferredDomains: z.array(z.string().trim().min(1).max(80)).max(8),
-  workPreference: z.string().max(80).optional(),
-  careerGoal: z.string().max(500).optional(),
+  bio: z.string().max(3000).optional(),
+  interests: z.array(z.string().trim().min(1).max(200)).max(30),
+  preferredDomains: z.array(z.string().trim().min(1).max(200)).max(30),
+  workPreference: z.string().max(500).optional(),
+  careerGoal: z.string().max(1000).optional(),
 });
 
 function completion(bundle: Awaited<ReturnType<typeof getProfileBundle>>) {
